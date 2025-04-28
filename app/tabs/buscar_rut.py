@@ -51,6 +51,7 @@ def mostrar(df):
                     <p><strong>📅 Año de Ingreso:</strong> {df_rut.iloc[0]['AÑO']}</p>
                     <p><strong>🏡 Ciudad de Origen:</strong> {df_rut.iloc[0]['Ciudad']}</p>
                     <p><strong>🚪 Vía de Ingreso:</strong> {df_rut.iloc[0]['Via de Ingreso']}</p>
+                    <p><strong>📚 Colegio de Origen:</strong> {df_rut.iloc[0]['Colegio de Origen']}</p>
                     <p><strong>📚 Año Actual Cursado:</strong> {df_rut.iloc[0]['Año cursado actual']}</p>
                     </div>
                     """, unsafe_allow_html=True)
@@ -188,7 +189,7 @@ def mostrar(df):
             st.markdown(f"### 🟩 Avance en la carrera: **{porcentaje_avance}%**")
             st.progress(porcentaje_avance / 100)
 
-            # Datos del estudiante
+            # Obtener los datos del estudiante
             estudiante = df_rut.iloc[0]
             nombre = estudiante['NOMBRE COMPLETO']
             carrera = estudiante['Texto Plan Estudio']
@@ -210,52 +211,80 @@ def mostrar(df):
             pdf = canvas.Canvas(buffer, pagesize=LETTER)
             width, height = LETTER
 
+            # Márgenes
+            margin_left = 50
+            margin_top = height - 60
+            line_height = 15  # Altura de las líneas de texto
+
             # Encabezado
             pdf.setFont("Helvetica-Bold", 20)
-            pdf.drawString(50, height - 60, "📚 Informe Académico del Estudiante")
+            pdf.drawString(margin_left, margin_top, "📚 Informe Académico del Estudiante")
+            margin_top -= 30
 
             # Línea separadora
             pdf.setLineWidth(1)
-            pdf.line(50, height - 70, width - 50, height - 70)
-
-            pdf.setFont("Helvetica", 12)
+            pdf.line(margin_left, margin_top, width - margin_left, margin_top)
+            margin_top -= 10
 
             # Datos personales
-            pdf.drawString(50, height - 100, f"👤 Nombre: {nombre}")
-            pdf.drawString(50, height - 120, f"🎓 Carrera: {carrera}")
-            pdf.drawString(50, height - 140, f"📅 Año de Ingreso: {anio_ingreso}")
-            pdf.drawString(50, height - 160, f"🏡 Ciudad de Origen: {ciudad}")
-            pdf.drawString(50, height - 180, f"🚪 Vía de Ingreso: {via_ingreso}")
-            pdf.drawString(50, height - 200, f"📚 Año Actual Cursado: {anio_actual}")
-            pdf.drawString(50, height - 220, f"📌 Estado: {estado}")
+            pdf.setFont("Helvetica-Bold", 14)
+            pdf.drawString(margin_left, margin_top, "👤 Datos Personales")
+            margin_top -= 20
 
-            # Académico
-            pdf.drawString(50, height - 260, "📘 Información Académica")
-            pdf.setLineWidth(0.5)
-            pdf.line(50, height - 265, width - 50, height - 265)
+            pdf.setFont("Helvetica", 12)
+            pdf.drawString(margin_left, margin_top, f"🎓 Carrera: {carrera}")
+            margin_top -= line_height
+            pdf.drawString(margin_left, margin_top, f"📅 Año de Ingreso: {anio_ingreso}")
+            margin_top -= line_height
+            pdf.drawString(margin_left, margin_top, f"🏡 Ciudad de Origen: {ciudad}")
+            margin_top -= line_height
+            pdf.drawString(margin_left, margin_top, f"🚪 Vía de Ingreso: {via_ingreso}")
+            margin_top -= line_height
+            pdf.drawString(margin_left, margin_top, f"📚 Año Actual Cursado: {anio_actual}")
+            margin_top -= line_height
+            pdf.drawString(margin_left, margin_top, f"📌 Estado: {estado}")
+            margin_top -= 30
 
-            pdf.drawString(50, height - 285, f"❌ Asignatura Reprobada: {asig_reprobada}")
-            pdf.drawString(50, height - 305, f"🔁 Veces Reprobadas: {veces_reprobadas}")
-            pdf.drawString(50, height - 325, f"✅ Asignaturas Aprobadas: {asig_aprobadas}")
-            pdf.drawString(50, height - 345, f"🔄 Convalidadas: {asig_convalidadas}")
-            pdf.drawString(50, height - 365, f"🔁 Ramos Repetidos (+1 vez): {ramos_repetidos}")
+            # Información académica
+            pdf.setFont("Helvetica-Bold", 14)
+            pdf.drawString(margin_left, margin_top, "📘 Información Académica")
+            margin_top -= 20
 
-            # Avance
-            pdf.drawString(50, height - 400, "📊 Progreso en la Carrera")
-            pdf.line(50, height - 405, width - 50, height - 405)
+            pdf.setFont("Helvetica", 12)
+            pdf.drawString(margin_left, margin_top, f"❌ Asignatura Reprobada: {asig_reprobada}")
+            margin_top -= line_height
+            pdf.drawString(margin_left, margin_top, f"🔁 Veces Reprobadas: {veces_reprobadas}")
+            margin_top -= line_height
+            pdf.drawString(margin_left, margin_top, f"✅ Asignaturas Aprobadas: {asig_aprobadas}")
+            margin_top -= line_height
+            pdf.drawString(margin_left, margin_top, f"🔄 Convalidadas: {asig_convalidadas}")
+            margin_top -= line_height
+            pdf.drawString(margin_left, margin_top, f"🔁 Ramos Repetidos (+1 vez): {ramos_repetidos}")
+            margin_top -= 30
 
-            pdf.drawString(50, height - 425, f"Avance: {porcentaje}")
+            # Progreso
+            pdf.setFont("Helvetica-Bold", 14)
+            pdf.drawString(margin_left, margin_top, "📊 Progreso en la Carrera")
+            margin_top -= 20
+
+            pdf.setFont("Helvetica", 12)
+            pdf.drawString(margin_left, margin_top, f"Avance: {porcentaje}")
+            margin_top -= 30
 
             # Riesgo
-            pdf.drawString(50, height - 460, "⚠️ Índice de Riesgo Estudiantil")
-            pdf.line(50, height - 465, width - 50, height - 465)
+            pdf.setFont("Helvetica-Bold", 14)
+            pdf.drawString(margin_left, margin_top, "⚠️ Índice de Riesgo Estudiantil")
+            margin_top -= 20
 
-            pdf.drawString(50, height - 485, f"Índice de Riesgo: {riesgo_str}")
+            pdf.setFont("Helvetica", 12)
+            pdf.drawString(margin_left, margin_top, f"Índice de Riesgo: {riesgo_str}")
+            margin_top -= 30
 
             # Footer
             pdf.setFont("Helvetica-Oblique", 9)
-            pdf.drawString(50, 30, f"Generado automáticamente el {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+            pdf.drawString(margin_left, 30, f"Generado automáticamente el {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
 
+            # Guardar PDF
             pdf.save()
             buffer.seek(0)
 

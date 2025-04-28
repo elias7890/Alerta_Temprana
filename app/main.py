@@ -1,6 +1,6 @@
 import streamlit as st
 from data_loader import cargar_datos
-from tabs import resumen, por_via, buscar_rut, por_carrera, analisis_pace
+from tabs import resumen, por_via, buscar_rut, por_carrera, analisis_pace, por_colegio
 from PIL import Image
 
 st.set_page_config(page_title="Alerta Temprana UCM", layout="centered" )
@@ -15,12 +15,13 @@ st.title("🎓 Sistema De Alerta Temprana UCM")
 st.metric("👨‍🎓 Total de estudiantes registrados", len(df))
 
 # Tabs
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📊 Resumen General", 
     "🔍 Análisis por Vía de Ingreso", 
     "🔎 Buscar por RUT", 
     "📊 Estadísticas por carrera",
-    "📈 Estadísticas PACE"
+    "📈 Estadísticas PACE",
+    "📊 Análisis por colegio"
 ])
 
 with tab1:
@@ -37,3 +38,6 @@ with tab4:
 
 with tab5:
     analisis_pace.mostrar(df)
+
+with tab6:
+    por_colegio.mostrar(df)
