@@ -1,79 +1,112 @@
 import streamlit as st
-import plotly.express as px
 import pandas as pd
+from datetime import datetime
+import io
 
+# Calcular índice de riesgo
+def calcular_indice_riesgo(row):
+    try:
+        reprobadas = float(row.get('Cantidad de veces Reprobadas', 0)) or 0
+    except:
+        reprobadas = 0
+
+    try:
+        ramos_repetidos = float(row.get('Ramo Repetido mas de una vez', 0)) or 0
+    except:
+        ramos_repetidos = 0
+
+    try:
+        anio_ingreso = int(row.get('AÑO', 0))
+        anio_actual = datetime.now().year
+        años_cursados = int(row.get('Año cursado actual', 0))
+        desfase = (anio_actual - anio_ingreso) - años_cursados
+        desfase = max(0, desfase)
+    except:
+        desfase = 0
+
+    riesgo = 0
+    riesgo += reprobadas * 1.5
+    riesgo += ramos_repetidos * 3
+    riesgo += desfase * 2
+
+    if riesgo < 5:
+        nivel_riesgo = "🟢 Bajo"
+        color_riesgo = "green"
+    elif riesgo < 10:
+        nivel_riesgo = "🟡 Medio"
+        color_riesgo = "orange"
+    else:
+        nivel_riesgo = "🔴 Alto"
+        color_riesgo = "red"
+
+    return pd.Series([nivel_riesgo, color_riesgo, riesgo])
+
+# Mostrar la información en Streamlit
 def mostrar(df):
-    st.header("Resumen general")
-    st.markdown("Análisis de distribución por carrera.")
+    st.title("📊 Resumen General de Estudiantes")
 
-    # 1️⃣ Agregamos columna de Riesgo
-    def calcular_riesgo(row):
-        if row['Cantidad de veces Reprobadas'] >= 3:
-            return 'Alto Riesgo'
-        elif row['Cantidad de veces Reprobadas'] == 2:
-            return 'Medio Riesgo'
-        else:
-            return 'Bajo Riesgo'
+    # Asegurar tipo de dato correcto en columna 'AÑO'
+    df['AÑO'] = pd.to_numeric(df['AÑO'], errors='coerce')
+    df = df.dropna(subset=['AÑO'])
+    df['AÑO'] = df['AÑO'].astype(int)
 
-    # Aseguramos que la columna 'Cantidad de veces Reprobadas' sea numérica
-    df['Cantidad de veces Reprobadas'] = pd.to_numeric(df['Cantidad de veces Reprobadas'], errors='coerce')
-    df['Riesgo'] = df.apply(calcular_riesgo, axis=1)
+    # Aplicar índice de riesgo
+    df[['Nivel Riesgo', 'Color Riesgo', 'Índice de Riesgo']] = df.apply(calcular_indice_riesgo, axis=1)
 
-    # Filtrar los estudiantes cuyo 'Vía de Ingreso' es PACE
-    df_pace = df[df['Via de Ingreso'] == 'PACE']
+    # Filtrar por año de ingreso
+    anios_disponibles = sorted(df['AÑO'].unique())
+    anio_seleccionado = st.selectbox("📅 Filtrar por año de ingreso", anios_disponibles)
 
-    # 2️⃣ Estudiantes por Carrera
-    df_carreras = df_pace['Texto Plan Estudio'].value_counts().reset_index()
-    df_carreras.columns = ['Carrera', 'Cantidad']
-    fig1 = px.bar(df_carreras, x='Carrera', y='Cantidad', title="Estudiantes por carrera",
-                color='Cantidad', color_continuous_scale='Tealgrn')
-    fig1.update_layout(xaxis_tickangle=-45, title_x=0.5)
-    st.plotly_chart(fig1, use_container_width=True)
+    df_ano = df[df['AÑO'] == anio_seleccionado].copy()
 
-    # # 3️⃣ Estudiantes por Ciudad de Origen
-    # df_ciudad = df_pace['Ciudad'].value_counts().reset_index()
-    # df_ciudad.columns = ['Ciudad', 'Cantidad']
-    # fig2 = px.pie(df_ciudad, names='Ciudad', values='Cantidad', title='Ciudad de origen',
-    #             color_discrete_sequence=px.colors.sequential.RdBu)
+    # Filtrar por "Vía de Ingreso" (Solo estudiantes PACE)
+    df_ano = df_ano[df_ano['Via de Ingreso'] == 'PACE']
 
-    # # Ajustes para eliminar las líneas fuera del gráfico
-    # fig2.update_traces(textinfo='label+value', pull=[0.1, 0.1, 0.1], showlegend=False, 
-    #                 marker=dict(line=dict(width=0)))
+    # Recuadros de resumen (filtrados)
+    total_alto = df_ano[df_ano['Nivel Riesgo'].str.contains("Alto")].shape[0]
+    total_medio = df_ano[df_ano['Nivel Riesgo'].str.contains("Medio")].shape[0]
+    total_bajo = df_ano[df_ano['Nivel Riesgo'].str.contains("Bajo")].shape[0]
 
-    # # Eliminar las líneas de leyenda fuera del gráfico
-    # fig2.update_layout(title_x=0.5)
+    col1, col2, col3 = st.columns(3)
+    col1.metric("🔴 Alto Riesgo", total_alto)
+    col2.metric("🟡 Riesgo Medio", total_medio)
+    col3.metric("🟢 Bajo Riesgo", total_bajo)
 
-    # # Mostrar el gráfico
-    # st.plotly_chart(fig2, use_container_width=True)
+    # Orden personalizado para riesgo
+    nivel_riesgo_orden = {
+        "🔴 Alto": 0,
+        "🟡 Medio": 1,
+        "🟢 Bajo": 2
+    }
+    df_ano['orden'] = df_ano['Nivel Riesgo'].map(nivel_riesgo_orden)
+    df_ano = df_ano.sort_values(by=['orden', 'Índice de Riesgo'], ascending=[True, False])
 
+    # Mostrar tabla usando pandas
 
+    st.markdown("### 📋 Detalle de Estudiantes Filtrados")
+    columnas_a_mostrar = ['RUT', 'NOMBRE COMPLETO', 'AÑO', 'Via de Ingreso', 'Texto Plan Estudio', 'Nivel Riesgo']
+    st.dataframe(df_ano[columnas_a_mostrar])
+    #st.dataframe(df_ano.drop(columns=['orden']))
 
-    # # 4️⃣ Distribución por Nivel de Riesgo
-    # df_riesgo = df['Riesgo'].value_counts().reset_index()
-    # df_riesgo.columns = ['Nivel de Riesgo', 'Cantidad']
-    # fig3 = px.pie(df_riesgo, names='Nivel de Riesgo', values='Cantidad',
-    #               title='Distribución de Estudiantes por Nivel de Riesgo',
-    #               color_discrete_sequence=['red', 'orange', 'green'])
-    # fig3.update_layout(title_x=0.5)
-    # st.plotly_chart(fig3, use_container_width=True)
+    st.markdown("### 📥 Descargar datos por nivel de riesgo")
 
-    # 5️⃣ Top 10 Estudiantes en Mayor Riesgo de Deserción
-    st.subheader("🚨 Top 10 Estudiantes en Mayor Riesgo de Deserción")
+    # Filtrar por nivel de riesgo
+    alto_riesgo_df = df_ano[df_ano['Nivel Riesgo'] == '🔴 Alto']
+    medio_riesgo_df = df_ano[df_ano['Nivel Riesgo'] == '🟡 Medio']
+    bajo_riesgo_df = df_ano[df_ano['Nivel Riesgo'] == '🟢 Bajo']
 
-    # Filtro para el año
-    anio_seleccionado = st.selectbox("Selecciona el Año", options=df['AÑO'].unique())
+    def generar_excel_download(df, nombre):
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name='Estudiantes')
+        st.download_button(
+            label=f"📥 Descargar {nombre}",
+            data=output.getvalue(),
+            file_name=f"{nombre.lower().replace(' ', '_')}.xlsx",
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
 
-    # Filtramos los estudiantes con alto riesgo, que hayan repetido más de un ramo, y por el año seleccionado
-    top_estudiantes = df[(df['Riesgo'] == 'Alto Riesgo') & 
-                        (df['Ramo Repetido mas de una vez'].notna()) & 
-                        (df['AÑO'] == anio_seleccionado)]
-
-    # Ordenamos los resultados por cantidad de veces reprobadas y seleccionamos los 10 primeros
-    top_estudiantes = top_estudiantes.sort_values('Cantidad de veces Reprobadas', ascending=False).head(10)
-
-    # Mostramos los resultados
-    st.dataframe(top_estudiantes[['RUT', 'NOMBRE COMPLETO', 'Texto Plan Estudio', 
-                                'Cantidad de veces Reprobadas', 'Riesgo', 'Ramo Repetido mas de una vez']])
-
-
-   
+    # Botones para descarga
+    generar_excel_download(alto_riesgo_df, "Alto Riesgo")
+    generar_excel_download(medio_riesgo_df, "Riesgo Medio")
+    generar_excel_download(bajo_riesgo_df, "Bajo Riesgo")

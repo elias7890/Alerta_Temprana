@@ -11,8 +11,11 @@ df = cargar_datos()
 
 st.title("🎓 Sistema De Alerta Temprana UCM")
 
-# Métrica principal
-st.metric("👨‍🎓 Total de estudiantes registrados", len(df))
+# Filtrar por "Vía de Ingreso" (Solo estudiantes PACE)
+df_pace = df[df['Via de Ingreso'] == 'PACE']  # Filtramos solo los estudiantes PACE
+
+    # Métrica del total de estudiantes PACE
+st.metric("👨‍🎓 Total de estudiantes registrados (PACE)", len(df_pace))
 
 # Tabs
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
