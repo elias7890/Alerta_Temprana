@@ -18,10 +18,10 @@ df_pace = df[df['Via de Ingreso'] == 'PACE']  # Filtramos solo los estudiantes P
 st.metric("👨‍🎓 Total de estudiantes registrados (PACE)", len(df_pace))
 
 # Tabs
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "📊 Resumen General", 
-    "🔍 Análisis por Vía de Ingreso", 
+tab1, tab3, tab2, tab4, tab5, tab6 = st.tabs([
+    "📊 Resumen General",  
     "🔎 Buscar por RUT", 
+    "🏫 Análisis de Puntajes",
     "📊 Estadísticas por carrera",
     "📈 Estadísticas PACE",
     "📊 Análisis por colegio"
